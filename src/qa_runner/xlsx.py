@@ -274,6 +274,7 @@ def write_workbook(path: "str | Path", suite: Suite, results: Mapping[str, Resul
                 info = zipfile.ZipInfo(name, date_time=_FIXED_ZIP_TIME)
                 info.compress_type = zipfile.ZIP_DEFLATED
                 info.external_attr = 0o600 << 16
+                info.create_system = 3          # same value on every OS
                 z.writestr(info, data)
         os.replace(tmp, path)
     finally:

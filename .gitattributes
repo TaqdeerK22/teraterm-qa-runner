@@ -1,4 +1,4 @@
-* text=auto
+* text=auto eol=lf
 *.ttl text eol=lf
 *.xlsx binary
 *.png binary
