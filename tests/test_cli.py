@@ -126,13 +126,13 @@ class CliTests(unittest.TestCase):
         self.assertEqual(run()[0], 2)
 
     def test_python_dash_m_entry_point(self):
+        import os
         import subprocess
         import sys
         proc = subprocess.run([sys.executable, "-m", "qa_runner", "--version"], capture_output=True,
-                              text=True, env={"PYTHONPATH": str(helpers.ROOT / "src")})
-        self.assertEqual(proc.returncode, 0)
+                              text=True, env={**os.environ, "PYTHONPATH": str(helpers.ROOT / "src")})
+        self.assertEqual(proc.returncode, 0, proc.stderr)
         self.assertIn("qa-runner 1.0.0", proc.stdout)
-
 
 if __name__ == "__main__":
     unittest.main()
