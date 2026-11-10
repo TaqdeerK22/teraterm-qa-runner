@@ -1,0 +1,115 @@
+{
+  "schema": 1,
+  "id": "widget-demo",
+  "name": "Acme Widget Controller - Demo Regression",
+  "version": "1.0",
+  "description": "A fictional device used to demonstrate teraterm-qa-runner. Replace with your own suite.",
+  "default_wait": 2,
+  "setup": [
+    { "instruct": "Connect the controller to the serial port and power it on. Wait for the green LED." },
+    { "send_secret": "login admin {secret}", "prompt": "Device admin password", "wait_after": 3 }
+  ],
+  "tests": [
+    {
+      "id": "BOOT-001", "group": "Startup",
+      "title": "Firmware version is reported",
+      "steps": [ { "send": "show version" } ],
+      "verify": "Verify the output shows firmware 2.4.1 and a build date."
+    },
+    {
+      "id": "BOOT-002", "group": "Startup",
+      "title": "Self-test passes after reboot",
+      "steps": [
+        { "instruct": "Press and release the RESET button on the front panel." },
+        { "wait": 15 },
+        { "send": "show selftest" }
+      ],
+      "verify": "Verify every self-test line reads OK and the status LED is solid green."
+    },
+    {
+      "id": "BOOT-003", "group": "Startup",
+      "title": "Uptime counter restarts",
+      "steps": [ { "send": "show uptime" } ],
+      "verify": "Verify the uptime is under two minutes."
+    },
+    {
+      "id": "NET-001", "group": "Connectivity",
+      "title": "Default network settings",
+      "steps": [ { "send": "net show" } ],
+      "verify": "Verify DHCP is enabled and an address is assigned."
+    },
+    {
+      "id": "NET-002", "group": "Connectivity",
+      "title": "Static address can be applied",
+      "steps": [
+        { "send": "net set ip 192.0.2.10 255.255.255.0" },
+        { "send": "net apply", "wait_after": 5 },
+        { "send": "net show" }
+      ],
+      "verify": "Verify the controller reports 192.0.2.10 and the link LED stays on."
+    },
+    {
+      "id": "NET-003", "group": "Connectivity",
+      "title": "Ping from a workstation succeeds",
+      "steps": [ { "instruct": "From a workstation on the same network run: ping 192.0.2.10" } ],
+      "verify": "Verify all replies are received with no packet loss."
+    },
+    {
+      "id": "NET-004", "group": "Connectivity",
+      "title": "DHCP can be restored",
+      "steps": [
+        { "send": "net set dhcp on" },
+        { "send": "net apply", "wait_after": 5 }
+      ],
+      "verify": "Verify net show reports DHCP enabled and a leased address."
+    },
+    {
+      "id": "LED-001", "group": "Indicators",
+      "title": "Each LED colour can be set",
+      "steps": [
+        { "send": "led set green" },
+        { "send": "led set amber" },
+        { "send": "led set red" }
+      ],
+      "verify": "Verify the status LED showed green, then amber, then red."
+    },
+    {
+      "id": "LED-002", "group": "Indicators",
+      "title": "LED blink rate follows the setting",
+      "steps": [ { "send": "led blink 1" }, { "wait": 5 } ],
+      "verify": "Verify the LED blinks about once per second."
+    },
+    {
+      "id": "STO-001", "group": "Storage",
+      "title": "Configuration export to USB",
+      "steps": [
+        { "instruct": "Insert a FAT32 USB stick into the front port." },
+        { "send": "config export", "wait_after": 5 }
+      ],
+      "verify": "Verify a success message appears and widget.conf exists on the stick."
+    },
+    {
+      "id": "STO-002", "group": "Storage",
+      "title": "Configuration import from USB",
+      "steps": [
+        { "send": "config import", "wait_after": 5 },
+        { "send": "show status" }
+      ],
+      "verify": "Verify the import succeeded and the status shows no errors."
+    },
+    {
+      "id": "STO-003", "group": "Storage",
+      "title": "Factory reset clears the configuration",
+      "steps": [
+        { "instruct": "This erases the configuration. Make sure the export from STO-001 exists first." },
+        { "send": "factory-reset confirm", "wait_after": 10 },
+        { "send": "net show" }
+      ],
+      "verify": "Verify network settings are back to defaults."
+    }
+  ],
+  "teardown": [
+    { "send": "logout" },
+    { "instruct": "Remove the USB stick and power down the controller." }
+  ]
+}

@@ -1,0 +1,250 @@
+; ============================================================================
+; GENERATED FILE - do not edit by hand.
+; Suite : Acme Widget Controller - Demo Regression (widget-demo) v1.0
+; Tests : 12 of 12
+; Made by teraterm-qa-runner 1.0.0. Edit the suite JSON, then regenerate.
+; ============================================================================
+settitle 'Acme Widget Controller - Demo Regression'
+
+; ---- settings (override here if needed) ------------------------------------
+qa_results_name = 'qa_results'
+qa_python = 'py -3'
+qa_suite_rel = '..\suites\demo_suite.json'
+qa_suite_id = 'widget-demo'
+
+; ---- results folder and paths ----------------------------------------------
+getenv 'USERPROFILE' qa_home
+strlen qa_home
+if result = 0 then
+    messagebox 'USERPROFILE is not set.' 'Setup error'
+    end
+endif
+sprintf2 qa_dir '%s\%s' qa_home qa_results_name
+foldersearch qa_dir
+if result = 0 then
+    foldercreate qa_dir
+    if result <> 0 then
+        messagebox 'Cannot create the results folder.' 'Setup error'
+        end
+    endif
+endif
+sprintf2 qa_pending '%s\_pending_result.txt' qa_dir
+sprintf2 qa_book '%s\%s_results.xlsx' qa_dir qa_suite_id
+getdir qa_macrodir
+sprintf2 qa_suite '%s\%s' qa_macrodir qa_suite_rel
+sprintf2 qa_savecmd 'cmd /c %s -m qa_runner record "%s" "%s" "%s"' qa_python qa_suite qa_pending qa_book
+
+; ---- who is running this? (saved with every result) ------------------------
+inputbox 'Your name (saved with every result)' 'Tester' ''
+qa_tester = inputstr
+strlen qa_tester
+if result = 0 then
+    qa_tester = 'unknown'
+endif
+
+messagebox 'Acme Widget Controller - Demo Regression: 12 tests. Ready?' 'Start'
+
+; ---- setup --------------------------------------------------------------
+messagebox 'Connect the controller to the serial port and power it on. Wait for the green LED.' 'Setup'
+passwordbox 'Device admin password' 'Setup'
+sprintf2 qa_cmd 'login admin %s' inputstr
+sendln qa_cmd
+qa_cmd = ''
+pause 3
+
+; ---- BOOT-001: Firmware version is reported ----
+sendln 'show version'
+pause 2
+messagebox 'Verify the output shows firmware 2.4.1 and a build date.' 'BOOT-001: Firmware version is reported'
+qa_id = 'BOOT-001'
+call qa_record
+
+; ---- BOOT-002: Self-test passes after reboot ----
+messagebox 'Press and release the RESET button on the front panel.' 'BOOT-002 [2/12]'
+pause 15
+sendln 'show selftest'
+pause 2
+messagebox 'Verify every self-test line reads OK and the status LED is solid green.' 'BOOT-002: Self-test passes after reboot'
+qa_id = 'BOOT-002'
+call qa_record
+
+; ---- BOOT-003: Uptime counter restarts ----
+sendln 'show uptime'
+pause 2
+messagebox 'Verify the uptime is under two minutes.' 'BOOT-003: Uptime counter restarts'
+qa_id = 'BOOT-003'
+call qa_record
+
+; ---- NET-001: Default network settings ----
+sendln 'net show'
+pause 2
+messagebox 'Verify DHCP is enabled and an address is assigned.' 'NET-001: Default network settings'
+qa_id = 'NET-001'
+call qa_record
+
+; ---- NET-002: Static address can be applied ----
+sendln 'net set ip 192.0.2.10 255.255.255.0'
+pause 2
+sendln 'net apply'
+pause 5
+sendln 'net show'
+pause 2
+messagebox 'Verify the controller reports 192.0.2.10 and the link LED stays on.' 'NET-002: Static address can be applied'
+qa_id = 'NET-002'
+call qa_record
+
+; ---- NET-003: Ping from a workstation succeeds ----
+messagebox 'From a workstation on the same network run: ping 192.0.2.10' 'NET-003 [6/12]'
+messagebox 'Verify all replies are received with no packet loss.' 'NET-003: Ping from a workstation succeeds'
+qa_id = 'NET-003'
+call qa_record
+
+; ---- NET-004: DHCP can be restored ----
+sendln 'net set dhcp on'
+pause 2
+sendln 'net apply'
+pause 5
+messagebox 'Verify net show reports DHCP enabled and a leased address.' 'NET-004: DHCP can be restored'
+qa_id = 'NET-004'
+call qa_record
+
+; ---- LED-001: Each LED colour can be set ----
+sendln 'led set green'
+pause 2
+sendln 'led set amber'
+pause 2
+sendln 'led set red'
+pause 2
+messagebox 'Verify the status LED showed green, then amber, then red.' 'LED-001: Each LED colour can be set'
+qa_id = 'LED-001'
+call qa_record
+
+; ---- LED-002: LED blink rate follows the setting ----
+sendln 'led blink 1'
+pause 2
+pause 5
+messagebox 'Verify the LED blinks about once per second.' 'LED-002: LED blink rate follows the setting'
+qa_id = 'LED-002'
+call qa_record
+
+; ---- STO-001: Configuration export to USB ----
+messagebox 'Insert a FAT32 USB stick into the front port.' 'STO-001 [10/12]'
+sendln 'config export'
+pause 5
+messagebox 'Verify a success message appears and widget.conf exists on the stick.' 'STO-001: Configuration export to USB'
+qa_id = 'STO-001'
+call qa_record
+
+; ---- STO-002: Configuration import from USB ----
+sendln 'config import'
+pause 5
+sendln 'show status'
+pause 2
+messagebox 'Verify the import succeeded and the status shows no errors.' 'STO-002: Configuration import from USB'
+qa_id = 'STO-002'
+call qa_record
+
+; ---- STO-003: Factory reset clears the configuration ----
+messagebox 'This erases the configuration. Make sure the export from STO-001 exists first.' 'STO-003 [12/12]'
+sendln 'factory-reset confirm'
+pause 10
+sendln 'net show'
+pause 2
+messagebox 'Verify network settings are back to defaults.' 'STO-003: Factory reset clears the configuration'
+qa_id = 'STO-003'
+call qa_record
+
+; ---- teardown -----------------------------------------------------------
+sendln 'logout'
+pause 2
+messagebox 'Remove the USB stick and power down the controller.' 'Teardown'
+
+sprintf2 qa_msg 'Run finished. Results are in:%s' qa_book
+messagebox qa_msg 'Done'
+end
+
+;=============================================================================
+; qa_record - ask for a result and a comment, then save them to Excel.
+;   IN : qa_id, qa_tester, qa_pending, qa_savecmd, qa_dir (globals)
+;   OUT: the test's row is updated; the macro stops if the save fails.
+;=============================================================================
+:qa_record
+sprintf2 qa_title_status 'Result for %s' qa_id
+sprintf2 qa_title_notes 'Comment for %s' qa_id
+
+:qa_ask_status
+inputbox 'Enter P=PASS, F=FAIL, B=BLOCKED, S=SKIP, N=NOT RUN (the full word also works)' qa_title_status ''
+qa_raw = inputstr
+toupper qa_key qa_raw
+qa_status = ''
+qa_short = 'P'
+qa_full = 'PASS'
+call qa_match
+qa_short = 'F'
+qa_full = 'FAIL'
+call qa_match
+qa_short = 'B'
+qa_full = 'BLOCKED'
+call qa_match
+qa_short = 'S'
+qa_full = 'SKIP'
+call qa_match
+qa_short = 'N'
+qa_full = 'NOT RUN'
+call qa_match
+strlen qa_status
+if result > 0 then
+    goto qa_status_ok
+endif
+
+; Nothing valid: ask again. Empty input (or Cancel) offers a way out.
+strlen qa_raw
+if result = 0 then
+    yesnobox 'No status entered. Stop the run? (saved results are kept)' 'No status'
+    if result = 1 then
+        end
+    endif
+else
+    messagebox 'Invalid status. Use P, F, B, S, N or the full status name. Please try again.' 'Invalid status'
+endif
+goto qa_ask_status
+
+:qa_status_ok
+inputbox 'Comment / what you observed (optional)' qa_title_notes ''
+qa_notes = inputstr
+
+; Hand over to Python through the pending file (id, status, tester, comment).
+filecreate qa_fh qa_pending
+if qa_fh = -1 then
+    messagebox 'Cannot create the pending result file.' 'Save error'
+    end
+endif
+filewriteln qa_fh qa_id
+filewriteln qa_fh qa_status
+filewriteln qa_fh qa_tester
+filewriteln qa_fh qa_notes
+fileclose qa_fh
+exec qa_savecmd 'hide' 1
+
+; Python deletes the pending file after a successful save. Still there = failed.
+filesearch qa_pending
+if result <> 0 then
+    sprintf2 qa_msg 'Saving %s failed. See qa_runner_error.log in:%s' qa_id qa_dir
+    messagebox qa_msg 'Save error'
+    end
+endif
+return
+
+;-----------------------------------------------------------------------------
+; qa_match - if qa_key equals qa_short or qa_full, set qa_status to qa_full.
+;-----------------------------------------------------------------------------
+:qa_match
+strcompare qa_key qa_short
+if result = 0 then
+    qa_status = qa_full
+endif
+strcompare qa_key qa_full
+if result = 0 then
+    qa_status = qa_full
+endif
+return
