@@ -1,17 +1,15 @@
-﻿
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """Rebuild everything in examples/ from suites/demo_suite.json.
 
     python scripts/build_examples.py           # rewrite the example files
     python scripts/build_examples.py --check   # exit 1 if they are out of date (used by CI)
 
-The output is fully deterministic (fixed timestamps, fixed zip metadata), so a
-plain byte comparison is enough to detect drift.
+Text files are compared byte for byte. The .xlsx is compared by the contents of
+its zip members, because zip bytes can differ between platforms and zlib builds.
 """
 from __future__ import annotations
 
 import argparse
-import json
 import sys
 import tempfile
 import zipfile
@@ -43,14 +41,30 @@ def build(out: Path) -> None:
     suite = load_suite(ROOT / "suites" / "demo_suite.json")
     out.mkdir(parents=True, exist_ok=True)
     macro = generate_macro(suite, MacroOptions(suite_rel_path="..\\suites\\demo_suite.json"))
-    (out / "demo_suite.ttl").write_text(macro, encoding="ascii", newline="\n")
+    with open(out / "demo_suite.ttl", "w", encoding="ascii", newline="\n") as fh:
+        fh.write(macro)
 
     results = {tid: Result(status, comment, "Alex Example", STAMP)
                for tid, (status, comment) in SAMPLE.items()}
     write_workbook(out / "demo_results.xlsx", suite, results, STAMP)
     summary = summarize(suite, results)
-    (out / "demo_report.md").write_text(render_markdown(summary), encoding="utf-8", newline="\n")
-    (out / "demo_report.html").write_text(render_html(summary, results), encoding="utf-8", newline="\n")
+    with open(out / "demo_report.md", "w", encoding="utf-8", newline="\n") as fh:
+        fh.write(render_markdown(summary))
+    with open(out / "demo_report.html", "w", encoding="utf-8", newline="\n") as fh:
+        fh.write(render_html(summary, results))
+
+
+def _zip_members(path: Path) -> dict:
+    with zipfile.ZipFile(path) as z:
+        return {name: z.read(name) for name in z.namelist()}
+
+
+def _same(actual: Path, fresh: Path) -> bool:
+    if not actual.exists():
+        return False
+    if fresh.suffix == ".xlsx":
+        return _zip_members(actual) == _zip_members(fresh)
+    return actual.read_bytes() == fresh.read_bytes()
 
 
 def main() -> int:
@@ -65,8 +79,7 @@ def main() -> int:
     with tempfile.TemporaryDirectory() as tmp:
         fresh = Path(tmp)
         build(fresh)
-        stale = [p.name for p in sorted(fresh.iterdir())
-                 if not (target / p.name).exists() or (target / p.name).read_bytes() != p.read_bytes()]
+        stale = [p.name for p in sorted(fresh.iterdir()) if not _same(target / p.name, p)]
     if stale:
         print("examples/ is out of date: " + ", ".join(stale), file=sys.stderr)
         print("run: python scripts/build_examples.py", file=sys.stderr)
@@ -77,4 +90,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
-

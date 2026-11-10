@@ -105,7 +105,8 @@ def _cmd_generate(args: argparse.Namespace) -> int:
     if problems:                            # a bug in the generator, never user error
         raise RuntimeError("generated macro failed lint:\n  " + "\n  ".join(problems))
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(macro, encoding="ascii", newline="\n")
+    with open(out, "w", encoding="ascii", newline="\n") as fh:
+        fh.write(macro)
     print(f"wrote {out} ({len(tests)} of {len(suite.tests)} tests)")
     return EXIT_OK
 
@@ -142,7 +143,8 @@ def _cmd_report(args: argparse.Namespace) -> int:
             "html": lambda: render_html(summary, results),
             "csv": lambda: render_csv(suite, results)}[args.format]()
     if args.output:
-        Path(args.output).write_text(text, encoding="utf-8", newline="\n")
+        with open(args.output, "w", encoding="utf-8", newline="\n") as fh:
+            fh.write(text)
         print(f"wrote {args.output}")
     else:
         sys.stdout.write(text)
