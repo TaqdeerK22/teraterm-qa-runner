@@ -1,3 +1,4 @@
+﻿import zipfile
 #!/usr/bin/env python3
 """Rebuild everything in examples/ from suites/demo_suite.json.
 
@@ -74,3 +75,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
+
