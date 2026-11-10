@@ -1,4 +1,4 @@
-﻿import zipfile
+﻿
 #!/usr/bin/env python3
 """Rebuild everything in examples/ from suites/demo_suite.json.
 
@@ -10,9 +10,9 @@ plain byte comparison is enough to detect drift.
 """
 from __future__ import annotations
 
-import argparse
+import json
 import sys
-import tempfile
+import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
